@@ -8,19 +8,32 @@ FramePerSec = pygame.time.Clock()
 WIDTH = 800
 HEIGHT = 600
 FPS = 60
-DISPLAYSURF = pygame.display.set_mode((WIDTH, HEIGHT))
-background = pygame.image.load('assets/bg1.png')
+GameDisplay = pygame.display.set_mode((WIDTH, HEIGHT))
 vec = pygame.math.Vector2
+
+def background():
+    ground_rect = pygame.Rect(0, HEIGHT, WIDTH, 100)
+    ground = pygame.Surface((ground_rect.width, ground_rect.height))
+    ground.fill((19,133,16))
+    GameDisplay.blit(ground, ground_rect)
+    GameDisplay.fill((130,201,230))
+    GameDisplay.blit(ground, (0, HEIGHT-100))
 
 # Boucle de jeu
 def main():
-    DISPLAYSURF.blit(background, (0, 0))
+    background()
     while True:
-       for event in pygame.event.get():
-           if event.type == QUIT:
-               pygame.quit()
-               sys.exit()
-       pygame.display.update()
+        FramePerSec.tick(FPS)
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                return
 
-print('caca')
-main()
+        
+        pygame.display.update()    
+    return
+
+if __name__ == "__main__":
+    main()
+
+pygame.quit()
+quit()
