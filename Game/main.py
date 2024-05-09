@@ -4,7 +4,7 @@ import color
 
 # Initialisation de Pygame
 pygame.init()
-pygame.display.set_caption("Jeu de BlackJack")
+pygame.display.set_caption("Dodge Game 2D")
 FramePerSec = pygame.time.Clock()
 w = 800
 h = 600
@@ -24,12 +24,10 @@ sun_img = pygame.image.load('Game/assets/img/sun.png')
 
 # Animation list
 stand_animation = []
-walk_animation = []
 animation_cooldown = 200
 frame = 0
 for i in range(4):
     stand_animation.append(sprite_sheet.get_image(i, 24, 24, 3, color.black))
-    walk_animation.append(sprite_sheet.get_image(i + 4, 24, 24, 3, color.black))
     
 
 def draw_grid():
@@ -69,22 +67,42 @@ class World():
     def draw(self):
         for tile in self.tile_list:
             screen.blit(tile[0], tile[1])
-
+#img = pygame.image.load(f'Game/assets/img/{stand_animation[0]}')
+#self.image = pygame.transform.scale(img, (40, 80))
 class Player():
     def __init__(self, x, y):
-        #img = pygame.image.load(f'Game/assets/img/{stand_animation[0]}')
-        #self.image = pygame.transform.scale(img, (40, 80))
-        self.image = stand_animation[0]
+        self.images_right = []
+        self.images_left = []
+        self.images_stand = []
+        self.index = 0
+        self.counter = 0
+        for num in range(4):
+            img_stand = pygame.image.load(f'Game/assets/doux/doux{num+1}.png')
+            img_stand = pygame.transform.scale(img_stand, (70, 70))
+            self.images_stand.append(img_stand)
+        for i in range(10):
+            img_right = pygame.image.load(f'Game/assets/doux/doux{num+5}.png')
+            img_right = pygame.transform.scale(img_right, (70, 70))
+            img_left = pygame.transform.flip(img_right, True, False) # flip(img, x axis, y axis)
+            self.images_right.append(img_right)
+            self.images_left.append(img_left)
+
+        print(self.images_stand)
+        print(self.images_right)
+        print(self.images_left)
+        self.image = self.images_right[self.index]
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
         self.vel_y = 0
         self.jumped = False
+        self.direction = 0
 
     def update(self):
         dx = 0
         dy = 0
         speed = 9
+        walk_cooldown = 8
         
         #get keypresses
         key = pygame.key.get_pressed()
@@ -95,10 +113,30 @@ class Player():
             self.jumped = False
         if key[pygame.K_LEFT]:
             dx -= speed
+            self.counter += 1
+            self.direction = -1
         if key[pygame.K_RIGHT]:
             dx += speed
+            self.counter += 1
+            self.direction = 1
+        if not(key[pygame.K_LEFT] and key[pygame.K_RIGHT]):
+            self.counter = 0
+            self.index = 0
+            #self.image = self.images_stand[self.index]
 
-
+        #handle animation
+        if self.counter > walk_cooldown:
+            self.counter = 0	
+            self.index += 1
+            if self.index >= len(self.images_right):
+                self.index = 0
+            if self.direction == 1:
+                self.image = self.images_right[self.index]
+            if self.direction == -1:
+                self.image = self.images_left[self.index]
+            if self.direction == 0:
+                self.image = self.images_stand(self.index)
+        
         #add gravity
         self.vel_y += 1
         if self.vel_y > 50:
@@ -144,18 +182,17 @@ def game():
         screen.blit(sun_img, (100, 100))
 
         world.draw()
-
-        draw_grid()
-
+        #draw_grid()
         player.update()
-        current_time = pygame.time.get_ticks()
+
+        """current_time = pygame.time.get_ticks()
         if current_time - last_update >= animation_cooldown:
             frame += 1
             last_update = current_time
             if frame >= len(stand_animation):
                 frame = 0
 
-        #screen.blit(stand_animation[frame], (100, ground))
+        screen.blit(stand_animation[frame], (100, ground))"""
 
         # Event handler
         for event in pygame.event.get():
@@ -171,5 +208,5 @@ def game():
 if __name__ == "__main__":
     game()
 
-print(f'[Finished in {last_update/1000}s]')
+print(f'[Finished in {last_update/100}s]')
 pygame.quit()
