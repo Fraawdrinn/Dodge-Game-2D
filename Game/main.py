@@ -15,20 +15,12 @@ vec = pygame.math.Vector2
 tile_size = 50
 ground = h-160
 
-
-sprite_sheet_img = pygame.image.load('Game/assets/Sprites/doux.png')
-sprite_sheet = spriteSheet.SpriteSheet(sprite_sheet_img)
-
 bg_img = pygame.image.load('Game/assets/img/sky.png')
 sun_img = pygame.image.load('Game/assets/img/sun.png')
 
-# Animation list
-stand_animation = []
-animation_cooldown = 200
-frame = 0
-for i in range(4):
-    stand_animation.append(sprite_sheet.get_image(i, 24, 24, 3, color.black))
-    
+doux_sheet_image = pygame.image.load('Game/assets/Sprites/doux.png').convert_alpha()
+doux_sheet = spriteSheet.diviser_sprite_sheet(doux_sheet_image, 24, 24)
+
 
 def draw_grid():
     for line in range(0, 20):
@@ -71,32 +63,34 @@ class World():
 #self.image = pygame.transform.scale(img, (40, 80))
 class Player():
     def __init__(self, x, y):
+        self.images_stand = []
+        self.images_stand_left = []
         self.images_right = []
         self.images_left = []
-        self.images_stand = []
+        self.size = 70
         self.index = 0
         self.counter = 0
-        for num in range(4):
-            img_stand = pygame.image.load(f'Game/assets/doux/doux{num+1}.png')
-            img_stand = pygame.transform.scale(img_stand, (70, 70))
-            self.images_stand.append(img_stand)
-        for i in range(10):
-            img_right = pygame.image.load(f'Game/assets/doux/doux{num+5}.png')
-            img_right = pygame.transform.scale(img_right, (70, 70))
-            img_left = pygame.transform.flip(img_right, True, False) # flip(img, x axis, y axis)
-            self.images_right.append(img_right)
+
+        for i in range(4):
+            img = doux_sheet[i]
+            img = pygame.transform.scale(img, (self.size, self.size))
+            img_left = pygame.transform.flip(img, True, False)
+            self.images_stand.append(img)
+            self.images_stand_left.append(img_left)
+        for u in range(10):
+            img = doux_sheet[u+4]
+            img = pygame.transform.scale(img, (self.size, self.size))
+            img_left = pygame.transform.flip(img, True, False)
+            self.images_right.append(img)
             self.images_left.append(img_left)
 
-        print(self.images_stand)
-        print(self.images_right)
-        print(self.images_left)
-        self.image = self.images_right[self.index]
+        self.image = self.images_stand[self.index]
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
         self.vel_y = 0
         self.jumped = False
-        self.direction = 0
+        self.direction = 1
 
     def update(self):
         dx = 0
@@ -104,39 +98,44 @@ class Player():
         speed = 9
         walk_cooldown = 8
         
-        #get keypresses
-        key = pygame.key.get_pressed()
-        if key[pygame.K_UP] and not self.jumped:
-            self.vel_y = -15
-            self.jumped = True
-        if not key[pygame.K_UP]:
-            self.jumped = False
-        if key[pygame.K_LEFT]:
-            dx -= speed
-            self.counter += 1
-            self.direction = -1
-        if key[pygame.K_RIGHT]:
-            dx += speed
-            self.counter += 1
-            self.direction = 1
-        if not(key[pygame.K_LEFT] and key[pygame.K_RIGHT]):
-            self.counter = 0
-            self.index = 0
-            #self.image = self.images_stand[self.index]
-
-        #handle animation
+        self.counter += 1
         if self.counter > walk_cooldown:
             self.counter = 0	
             self.index += 1
-            if self.index >= len(self.images_right):
-                self.index = 0
-            if self.direction == 1:
-                self.image = self.images_right[self.index]
-            if self.direction == -1:
-                self.image = self.images_left[self.index]
-            if self.direction == 0:
-                self.image = self.images_stand(self.index)
-        
+        if self.index >= len(self.images_stand) or self.index >= len(self.images_right) or self.index >= len(self.images_left):
+            self.index = 0
+
+        #get keypresses
+        key = pygame.key.get_pressed()
+        if key[pygame.K_UP] and not self.jumped and self.rect.bottom == ground + self.size:  # Autorise le saut seulement si le joueur est au sol et n'a pas déjà sauté
+            self.vel_y = -15
+            self.jumped = True  # Met à jour la variable jumped
+
+        if not key[pygame.K_UP] and self.rect.bottom == ground + self.size:  # Réinitialise la variable jumped lorsque le joueur touche le sol
+            self.jumped = False
+
+        if key[pygame.K_LEFT] and not self.rect.x <= -2: # aller à gauche sans sortir de l'écran
+            dx -= speed
+            self.index += 1
+            self.direction = -2
+
+        if key[pygame.K_RIGHT] and not self.rect.x >= w-self.size+10:  # aller à droite sans sortir de l'écran
+            dx += speed
+            self.index += 1
+            self.direction = 2
+
+        if not key[pygame.K_RIGHT] and not key[pygame.K_LEFT]:
+            if self.direction == -2:
+                self.direction = -1
+            elif self.direction == 2:
+                self.direction = 1
+
+        #handle direction
+        if self.direction == 1: self.image = self.images_stand[self.index]
+        elif self.direction == -1: self.image = self.images_stand_left[self.index]
+        elif self.direction == -2: self.image = self.images_left[self.index]
+        elif self.direction == 2: self.image = self.images_right[self.index]
+
         #add gravity
         self.vel_y += 1
         if self.vel_y > 50:

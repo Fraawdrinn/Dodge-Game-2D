@@ -1,13 +1,19 @@
 import pygame
 
-class SpriteSheet():
-  def __init__(self, image):
-    self.sheet = image
+def diviser_sprite_sheet(sprite_sheet, largeur_frame, hauteur_frame):
+    frames = []
+    largeur_total, hauteur_total = sprite_sheet.get_size()
+    print(sprite_sheet.get_size())
+    colonnes = largeur_total // largeur_frame
+    lignes = hauteur_total // hauteur_frame
 
-  def get_image(self, frame, width, height, scale, colour):
-    image = pygame.Surface((width, height)).convert_alpha()
-    image.blit(self.sheet, (0, 0), ((frame * width), 0, width, height))
-    image = pygame.transform.scale(image, (width * scale, height * scale))
-    image.set_colorkey(colour)
+    for ligne in range(lignes):
+        for colonne in range(colonnes):
+            x = colonne * largeur_frame
+            y = ligne * hauteur_frame
+            frame_surface = pygame.Surface((largeur_frame, hauteur_frame))
+            frame_surface.blit(sprite_sheet, (0, 0), (x, y, largeur_frame, hauteur_frame))
+            frame_surface.set_colorkey((0, 0, 0))  # Supprimer le fond (noir)
+            frames.append(frame_surface)
 
-    return image
+    return frames
