@@ -25,9 +25,21 @@ def draw_grid():
         pygame.draw.line(screen, (255, 255, 255), (0, line * tile_size), (w, line * tile_size))
         pygame.draw.line(screen, (255, 255, 255), (line * tile_size, 0), (line * tile_size, h))
 
-def draw_rect(text, color, rect):
-    pygame.draw.rect(screen, color, (rect))
-    screen.blit(text, (rect[0], rect[1]))
+def draw_rect(text, isBold, textColor, rectColor, rect, isRectTrans=False):
+    if isRectTrans:
+        shape_surf = pygame.Surface(pygame.Rect(rect).size, pygame.SRCALPHA)
+        pygame.draw.rect(shape_surf, color, shape_surf.get_rect())
+        screen.blit(shape_surf, rect)
+    else:
+        # Équilibrer la position du texte
+        if len(text) <= 3: textRect = (rect[0] + (rect[2]/2), rect[1] + (rect[3]/3))
+        elif len(text) <= 6: textRect = (rect[0] + (rect[2]/3), rect[1] + (rect[3]/3))
+        else: textRect = (rect[0] + (rect[2]/4), rect[1] + (rect[3]/3))
+
+        texte = font.render(text, isBold, textColor)
+        pygame.draw.rect(screen, rectColor, (rect))
+        screen.blit(texte, textRect)
+        return pygame.Rect(rect)
 
 class World():
     def __init__(self, data):
@@ -220,11 +232,24 @@ player = Player(100, ground)
 world = World(world1_data)
 rock = Meteorite(world1_data)
 
+def count_down():
+    count = 4
+    # draw_rect(str(count), True, color.black, )
+
+def replay():
+    replay_button = draw_rect('Rejouer', True, color.white, color.red, (w/4, h/3, w/6, 100))
+    mouse = pygame.mouse.get_pos()
+    if replay_button.collidepoint(mouse):
+        return 1
+
+
+
 # Game loop
 def game():
     global last_update, meteorites
     meteorites = []  # Liste pour stocker les météorites
-
+    game_timer = pygame.time.get_ticks()
+    
     # Parameters
     raining = True
     spawn_rate = 10
@@ -256,7 +281,7 @@ def game():
         # Event handler
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return
+                pygame.quit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:
                     return
@@ -264,29 +289,60 @@ def game():
                     raining = True
 
         # Afficher un timer
-        draw_rect(font.render(str(pygame.time.get_ticks()//1000), False, color.black), color.white, (w-80, 0, 80, 30))
+        draw_rect(str(game_timer//1000), False, color.black, color.white, (w-40, 0, 40, 30))
 
         FramePerSec.tick(FPS)
         pygame.display.update()
 
 def menu():
-    game_running = True
-    while game_running:
-        # Afficher le menu
-        
+    # Afficher le menu
+    screen.blit(bg_img, (0, 0))
+    screen.blit(sun_img, (100, 100))
 
+    play_button = draw_rect('Jouer', True, color.white, color.red, (w/4, h/3, w/6, 100))
+    mouse = pygame.mouse.get_pos()
+    if play_button.collidepoint(mouse):
+        return 1
+
+    #return pygame.Rect((w/4, h/3, w/6, 100))
+
+
+def main():
+    run = True
+    menu_can_run = True
+    replay_can_run = False
+    while run:
+        #Background
+        screen.blit(bg_img, (0, 0))
+        screen.blit(sun_img, (100, 100))
+
+        if menu_can_run: menu()
+        if replay_can_run: replay()
 
         # Event handler
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return
+                run = False
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if menu() == 1:
+                    menu_can_run = False
+                    game()
+                    replay_can_run = True
+                elif replay() == 1:
+                    replay_can_run = False
+                    game()
 
-run = True
-while run:
-    game()
-    pygame.time.wait(2000)
-    run = False
 
+        # Afficher le message de fin
+        # Fonction rejouer
+        
+        
+
+        FramePerSec.tick(FPS)
+        pygame.display.update()
+    
+if __name__ == '__main__':
+    main()
 
 # Quitter le jeu
 print(f'[Finished in {last_update/1000}s]')
